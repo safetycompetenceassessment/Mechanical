@@ -2541,6 +2541,25 @@ function sendFirstAttemptDetails() {
 
 function autoSubmit(reason) {
   if (alreadySubmitted) return;
+
+  // ✅ If a section was active, lock it permanently
+  if (activeSection) {
+    sections[activeSection].done = true;
+
+    // Disable all questions in that section
+    for (
+      let i = sections[activeSection].start;
+      i <= sections[activeSection].end;
+      i++
+    ) {
+      document
+        .querySelectorAll(`input[name="q${i}"]`)
+        .forEach(r => (r.disabled = true));
+    }
+  }
+
+  saveProgress(); // 🔐 persist section lock
+
   alert(reason + "\nTest will be submitted automatically.");
   submitTest();
 }
@@ -2784,6 +2803,14 @@ function stopSnapshots() {
 
 /* ===================== OPEN SECTION ===================== */
 async function openSection(sec) {
+const saved = getSavedData(lockedEmail);
+  if (saved?.submitted) {
+    return alert("Test already submitted. Sections are locked.");
+  }
+
+  if (sections[sec].done) {
+    return alert("This section is already completed and locked.");
+  }
   if (sections[sec].done) return alert("Section already completed");
 
   try {
@@ -2896,6 +2923,7 @@ function restoreProgress(data) {
 
   // ✅ repaint buttons
   updateSectionButtonsUI();
+alreadySubmitted = data.submitted === true;
 }
 
 
