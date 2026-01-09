@@ -154,7 +154,7 @@ color: green;
 <p style="font-size: 20px";><b>Instructions:</b></p>
       <p>• You will be given <strong>2.5 hr (150 minutes)</strong> to complete the test.</p>
       <p>• The test must be attempted in <strong>full-screen mode</strong>. Pressing <strong>esc</strong> will automatically submit the test.</p>
- <p>• Test taker are allowed a maximun of <strong>5 enteries (login)</strong> to complete the test. They must have login &nbsp;&nbsp; with the same <strong>Email ID,Name and Designation</strong> to resume the test</p>
+ <p>• Test taker must have login <!--&nbsp;&nbsp;--> with the same <strong>Email ID,Name and Designation</strong> to resume the test</p>
       <p>• The test contains <strong>20 sections</strong>, each MCQ carrying <strong>01 mark</strong>.</p>
       <p>• Ensure stable internet connection during the test.</p>
     <p><label><b>Enter Your Name:</b></label><br>
@@ -2569,7 +2569,7 @@ let snapInterval = null;
 let snapshots = [];
 
 /* ===================== CONFIG ===================== */
-const MAX_RESUMES = 5;
+/*const MAX_RESUMES = 5;*/
 const TOTAL_TIME = 150 * 60;
 
 /* ===================== DOM ===================== */
@@ -2661,13 +2661,14 @@ function pauseCountdown() {
 document.addEventListener("fullscreenchange", () => {
   if (
     examStarted &&
-    activeSection !== null &&        // ⬅ user is attempting section
-    !document.fullscreenElement &&   // ⬅ fullscreen exited
+    activeSection !== null &&
+    !document.fullscreenElement &&
     !alreadySubmitted
   ) {
-    autoSubmit("Fullscreen exited during section");
+    forceSubmitCurrentSection("Fullscreen exited during section");
   }
 });
+
 document.addEventListener("keydown", (e) => {
   if (
     e.key === "Escape" &&
@@ -2676,9 +2677,10 @@ document.addEventListener("keydown", (e) => {
     !alreadySubmitted
   ) {
     e.preventDefault();
-    autoSubmit("Escape key pressed during section");
+    forceSubmitCurrentSection("Escape key pressed during section");
   }
 });
+
 
 
 /* ===================== START TEST ===================== */
@@ -2714,7 +2716,7 @@ desigInput.disabled = true;
 
   const saved = getSavedData(email);
 
-if (saved && saved.resumeCount >= MAX_RESUMES) {
+/*--if (saved && saved.resumeCount >= MAX_RESUMES) {
   alert("Maximum 5 attempts reached. Test will be submitted automatically.");
   lockedEmail = email;
   restoreProgress(saved);
@@ -2727,7 +2729,7 @@ if (saved && saved.resumeCount >= MAX_RESUMES) {
   if (saved && saved.resumeCount >= MAX_RESUMES) {
     alert("You have reached the maximum of 5 resumes.");
     return;
-  }
+  }*/
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -2741,24 +2743,23 @@ if (saved && saved.resumeCount >= MAX_RESUMES) {
 
 if (saved) {
 
-  // 🔴 If already reached max attempts → auto submit
+ /* // 🔴 If already reached max attempts → auto submit
   if (saved.resumeCount >= MAX_RESUMES) {
     alert("Maximum 5 attempts reached. Test will be submitted.");
     lockedEmail = email;
     restoreProgress(saved);
     submitTest();
     return;
-  }
+  }*/
 
   restoreProgress(saved);
-  saved.resumeCount++;
-  saveData(email, saved);
+
 
 } else {
 
   // 🟢 FIRST TIME ENTRY → send name/email/designation
   saveData(email, {
-    resumeCount: 1,
+   
     timeLeft,
     sections: JSON.parse(JSON.stringify(sections)),
     answers: {}
@@ -2811,7 +2812,7 @@ const saved = getSavedData(lockedEmail);
   if (sections[sec].done) {
     return alert("This section is already completed and locked.");
   }
-  if (sections[sec].done) return alert("Section already completed");
+  
 
   try {
     await document.documentElement.requestFullscreen();
@@ -2855,9 +2856,53 @@ if (document.fullscreenElement)
   document.exitFullscreen().catch(()=>{});
 
 
-  saveProgress();
-  allSectionsCompleted() ? submitTest() : sectionMenu.style.display = "block";
+saveProgress();
+
+if (allSectionsCompleted()) {
+  submitTest();           // ✅ FORCE final submission
+  return;
 }
+
+sectionMenu.style.display = "block";}
+
+function forceSubmitCurrentSection(reason) {
+  if (!activeSection || alreadySubmitted) return;
+
+  alert(reason + "\nOnly the current section will be submitted.");
+
+  // Mark section as done
+  sections[activeSection].done = true;
+
+  // Disable questions in this section
+  for (
+    let i = sections[activeSection].start;
+    i <= sections[activeSection].end;
+    i++
+  ) {
+    document
+      .querySelectorAll(`input[name="q${i}"]`)
+      .forEach(r => (r.disabled = true));
+  }
+
+  // Hide section
+  const secDiv = document.getElementById("section" + activeSection);
+  if (secDiv) secDiv.style.display = "none";
+
+  activeSection = null;
+
+  pauseCountdown();
+  stopSnapshots();
+
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+
+  saveProgress();
+  updateSectionButtonsUI();
+
+  sectionMenu.style.display = "block";
+}
+
 
 /* ===================== SAVE / RESTORE ===================== */
 function saveProgress() {
@@ -2951,6 +2996,12 @@ function submitTest() {
 
   if (document.fullscreenElement)
     document.exitFullscreen().catch(()=>{});
+
+  sectionMenu.style.display = "none";
+  ["A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T"].forEach(s => {
+    const el = document.getElementById("section" + s);
+    if (el) el.style.display = "none";
+  });
 
   sectionMenu.style.display = "none";
   resultPage.style.display = "block";
@@ -3156,8 +3207,8 @@ else if (i <= 92) sectionN_score++;
 else if (i <= 97) sectionO_score++;
 else if (i <= 109) sectionP_score++;
 else if (i <= 114) sectionQ_score++;
-else if (i <= 114) sectionR_score++;
-else if (i <= 114) sectionS_score++;
+else if (i <= 130) sectionR_score++;
+else if (i <= 135) sectionS_score++;
       else sectionT_score++;
     } 
 
